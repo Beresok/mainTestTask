@@ -4,9 +4,9 @@
 /* if (!empty($arResult["ERRORS"])):?>
 	<?ShowError(implode("<br />", $arResult["ERRORS"]))?>
 <?endif; */ 
-if (strlen($arResult["MESSAGE"]) > 0):?>
-	<?ShowNote($arResult["MESSAGE"])?>
-<?endif?>
+if ($arResult['ok']) { ?> 
+	<h1>Ваша заявка принята</h1>
+<? } else { ?>
 <form name="iblock_add" action="<?=POST_FORM_ACTION_URI?>" method="post" enctype="multipart/form-data">
 	<?=bitrix_sessid_post()?>
 	<?if ($arParams["MAX_FILE_SIZE"] > 0):?><input type="hidden" name="MAX_FILE_SIZE" value="<?=$arParams["MAX_FILE_SIZE"]?>" /><?endif?>
@@ -406,8 +406,4 @@ if (strlen($arResult["MESSAGE"]) > 0):?>
 		</tfoot>
 	</table>
 </form>
-
-<!-- 		
-foreach ($arResult["PROPERTY_LIST"] as $propertyID){
-echo '<pre>'; print_r($propertyID); echo '</pre>';
-} -->
+<? 	} ?> 

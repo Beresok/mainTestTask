@@ -1,7 +1,7 @@
 <? if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true)die();
 	if(!CModule::IncludeModule("iblock"))
 		return false;
-
+	$arResult['ok'] = '';
 
 	$COL_COUNT = 30;
 	$arResult["PROPERTY_LIST"] = array();
@@ -11,48 +11,49 @@
 		array("sort"=>$arParams['SORT1'],"id"=>$arParams['SORT2']), 
 		array("ACTIVE"=>"Y", "IBLOCK_ID"=>$arParams["IBLOCK_ID"])
 	);
-if ($this->StartResultCache())
-{
-	// Получаем список свойств iBlock
-	while ($arProperty = $rsIBLockPropertyList->GetNext())
+	if ($this->StartResultCache())
 	{
-		// если свойство - список
-		if ($arProperty["PROPERTY_TYPE"] == "L") 
+		// Получаем список свойств iBlock
+		while ($arProperty = $rsIBLockPropertyList->GetNext())
 		{
-			$rsPropertyEnum = CIBlockProperty::GetPropertyEnum($arProperty["ID"]); // возвращаем варианты значений
-			$arProperty["ENUM"] = array(); // обнуляем массив $arProperty["ENUM"]
-			while ($arPropertyEnum = $rsPropertyEnum->GetNext()) // пока есть значения
+			// если свойство - список
+			if ($arProperty["PROPERTY_TYPE"] == "L") 
 			{
-				$arProperty["ENUM"][$arPropertyEnum["ID"]] = $arPropertyEnum; // записываем значения
+				$rsPropertyEnum = CIBlockProperty::GetPropertyEnum($arProperty["ID"]); // возвращаем варианты значений
+				$arProperty["ENUM"] = array(); // обнуляем массив $arProperty["ENUM"]
+				while ($arPropertyEnum = $rsPropertyEnum->GetNext()) // пока есть значения
+				{
+					$arProperty["ENUM"][$arPropertyEnum["ID"]] = $arPropertyEnum; // записываем значения
+				}
 			}
-		}
-		// если свойство - (предположительно текст) (#спросить у Саши(что за тип свойства "T"))
-		if ($arProperty["PROPERTY_TYPE"] == "T")
-		{
-			if (empty($arProperty["COL_COUNT"])){
-				$arProperty["COL_COUNT"] = "30";
-			} 
-			if (empty($arProperty["ROW_COUNT"])){
-				$arProperty["ROW_COUNT"] = "5";
+			// если свойство - (предположительно текст) (#спросить у Саши(что за тип свойства "T"))
+			if ($arProperty["PROPERTY_TYPE"] == "T")
+			{
+				if (empty($arProperty["COL_COUNT"])){
+					$arProperty["COL_COUNT"] = "30";
+				} 
+				if (empty($arProperty["ROW_COUNT"])){
+					$arProperty["ROW_COUNT"] = "5";
+				}
 			}
-		}
 
-		if(strlen($arProperty["USER_TYPE"]) > 0 )
-		{
-			$arUserType = CIBlockProperty::GetUserType($arProperty["USER_TYPE"]);
-			if(array_key_exists("GetPublicEditHTML", $arUserType))
-				$arProperty["GetPublicEditHTML"] = $arUserType["GetPublicEditHTML"];
+			if(strlen($arProperty["USER_TYPE"]) > 0 )
+			{
+				$arUserType = CIBlockProperty::GetUserType($arProperty["USER_TYPE"]);
+				if(array_key_exists("GetPublicEditHTML", $arUserType))
+					$arProperty["GetPublicEditHTML"] = $arUserType["GetPublicEditHTML"];
+				else
+					$arProperty["GetPublicEditHTML"] = false;
+			}
 			else
+			{
 				$arProperty["GetPublicEditHTML"] = false;
-		}
-		else
-		{
-			$arProperty["GetPublicEditHTML"] = false;
-		}
+			}
 
-		if (in_array($arProperty["ID"],$arParams["PROPERTY_CODES"])) {
-			$arResult["PROPERTY_LIST"][] = $arProperty["ID"];
-			$arResult["PROPERTY_LIST_FULL"][$arProperty["ID"]] = $arProperty;
+			if (in_array($arProperty["ID"],$arParams["PROPERTY_CODES"])) {
+				$arResult["PROPERTY_LIST"][] = $arProperty["ID"];
+				$arResult["PROPERTY_LIST_FULL"][$arProperty["ID"]] = $arProperty;
+			}
 		}
 	}
 
@@ -326,9 +327,12 @@ if ($this->StartResultCache())
 				}
 				else
 				{
+					
 					mail($arParams['EMAIL_TO'], 'Новая заявка №'.$applicationNumber.'.', 'Поступила новая заявка с сайта. Номер заявки: '.$applicationNumber.' нового элемента инфоблока '.$arParams['IBLOCK_ID'].'.');
 
 					mail($arProperties[$arParams['ID_PROPERTY_EMAIL']][0], 'Ваша заявка №'.$applicationNumber.' принята.', 'Ваша заявка принята, ей присвоен номер '.$applicationNumber.' нового элемента инфоблока '.$arParams['IBLOCK_ID'].'.');
+					LocalRedirect($APPLICATION->GetCurPageParam("success=ok", Array("success")));
+
 				}
 		}
 
@@ -337,19 +341,25 @@ if ($this->StartResultCache())
 			LocalRedirect('/'); // если без ajax, то можно на страницу успеха 
 			exit();
 		}
+	} 
+	elseif($_REQUEST["success"] == 'ok')
+	{
+		$arResult['ok'] = 'ok';
 	}
-		if (!empty($arResult["ERRORS"]))
-		{
-			// echo '<br>-------------------errors---------------------';
-			// echo '<pre>'; print_r($arResult["ERRORS"]); echo '</pre>';
-			// echo '<br>-------------------errors---------------------';
-		}
 
-		// Использование капчи
-		if ($arParams["USE_CAPTCHA"] == "Y" && $arParams["ID"] <= 0) 
-		{
-			$arResult["CAPTCHA_CODE"] = htmlspecialcharsbx($APPLICATION->CaptchaGetCode());
-		}
-		$this->includeComponentTemplate();
-}
+	if (!empty($arResult["ERRORS"]))
+	{
+		// echo '<br>-------------------errors---------------------';
+		// echo '<pre>'; print_r($arResult["ERRORS"]); echo '</pre>';
+		// echo '<br>-------------------errors---------------------';
+	}
+
+	// Использование капчи
+	if ($arParams["USE_CAPTCHA"] == "Y" && $arParams["ID"] <= 0) 
+	{
+		$arResult["CAPTCHA_CODE"] = htmlspecialcharsbx($APPLICATION->CaptchaGetCode());
+	}
+
+	$this->includeComponentTemplate();
+
 ?>
